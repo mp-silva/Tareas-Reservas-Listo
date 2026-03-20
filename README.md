@@ -1,7 +1,39 @@
 # Tareas-Reservas-Listo
 
-Microservicio de Reservas - Club DeportivoEste proyecto forma parte de una arquitectura de microservicios diseñada para la gestión de un club deportivo. Su función principal es la administración de reservas, validando la existencia de recursos en otros módulos mediante comunicación síncrona.Proceso de Implementación de Comunicación Inter-serviciosPara lograr que el servicio de Reservas se comunique con el servicio de Canchas, se realizaron los siguientes pasos técnicos:1. Configuración de Dependencias (Maven)Se integró Spring Cloud OpenFeign en el archivo pom.xml. Para asegurar la compatibilidad con Spring Boot 4.0.1, se utilizó el release train de Spring Cloud 2025.1.1.XML<dependency>
-    <groupId>org.springframework.cloud</groupId>
-    <artifactId>spring-cloud-starter-openfeign</artifactId>
-</dependency>
-2. Activación del Cliente FeignEn la clase principal de la aplicación (ServicioreservasApplication.java), se añadió la anotación @EnableFeignClients. Esto permite que Spring busque e inyecte las interfaces marcadas como clientes HTTP durante el arranque del contexto.3. Creación del DTO de CanchaSe definió un objeto de transferencia de datos (DTO) en el paquete model.dto. Este objeto actúa como un espejo de la entidad en el microservicio de Canchas, permitiendo que el JSON recibido se convierta automáticamente en un objeto Java.4. Definición de la Interfaz CanchaClientSe implementó una interfaz declarativa utilizando la anotación @FeignClient. Esta interfaz define el contrato de comunicación:URL: http://localhost:8081 (Dirección del servicio de Canchas).Método: GET /api/canchas/{id}.5. Integración en la Capa de ServicioEn ReservaServicesImpl, se inyectó el CanchaClient para añadir una capa de validación en el método crearReserva. El flujo lógico es el siguiente:El servicio recibe una solicitud de reserva.Se realiza una llamada vía Feign al puerto 8081 para verificar el ID de la cancha.Si la cancha existe, la reserva se persiste en la base de datos de Reservas (puerto 8082).Si la cancha no existe o el servicio destino está caído, se lanza una excepción controlada.Requisitos del SistemaJava: 21Framework: Spring Boot 4.0.1Base de Datos: MySQL (vía XAMPP u otro servidor)Gestor de Dependencias: MavenEndpoints de ReservasMétodoRutaDescripciónGET/api/reservasObtener todas las reservas registradas.POST/api/reservasCrear una reserva (Requiere validación de Cancha).GET/api/reservas/cancha/{id}Filtrar reservas por ID de cancha.Instrucciones de EjecuciónIniciar el servidor MySQL y crear la base de datos correspondiente.Ejecutar primero el Microservicio de Canchas (Puerto 8081).Ejecutar el Microservicio de Reservas (Puerto 8082).Realizar pruebas mediante Postman enviando un objeto JSON que contenga un canchaId válido existente en el otro servicio.
+Sistema de Gestion Deportiva - Microservicio de Reservas
+Este modulo es el encargado de la gestion y persistencia de reservaciones del club. Su arquitectura se basa en el desacoplamiento de servicios, utilizando comunicacion sincronica para garantizar la integridad de los datos entre modulos independientes.
+
+Stack Tecnologico
+Lenguaje: Java 21
+
+Framework Base: Spring Boot 4.0.1
+
+Comunicacion Inter-servicios: Spring Cloud OpenFeign 2025.1.1
+
+Persistencia: Spring Data JPA / MySQL
+
+Gestor de Dependencias: Maven
+
+Implementacion de Comunicacion Inter-servicios
+El sistema implementa un patron de comunicacion entre el Servicio de Reservas (Puerto 8082) y el Servicio de Canchas (Puerto 8081). Los componentes clave de esta integracion son:
+
+1. Gestion de Dependencias y Versiones
+Se configuro el bloque dependencyManagement en el archivo pom.xml para integrar el Bill of Materials (BOM) de Spring Cloud. Esto asegura que la libreria de OpenFeign sea totalmente compatible con la version 4.0.1 de Spring Boot, evitando conflictos de dependencias en tiempo de ejecucion.
+
+2. Cliente Declarativo (OpenFeign)
+Se desarrollo la interfaz CanchaClient en el paquete de clientes. Esta interfaz actua como un proxy dinamico que:
+
+Define la URL base del servicio externo (http://localhost:8081).
+
+Mapea el endpoint de consulta por identificador (/api/canchas/{id}).
+
+Realiza la deserializacion automatica del JSON de respuesta hacia el objeto CanchaDTO.
+
+3. Logica de Validacion en Capa de Servicio
+En la implementacion de ReservaServicesImpl, se integro una validacion obligatoria antes de la persistencia:
+
+El servicio solicita la informacion de la cancha al microservicio externo.
+
+Si el recurso existe, se procede con el guardado de la reserva.
+
+En caso de que el recurso no exista o el servicio destino no este disponible, se captura la excepcion y se interrumpe el proceso para evitar inconsistencias en la base de datos.
